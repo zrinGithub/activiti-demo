@@ -63,8 +63,14 @@ public class ActivitiConfig {
     @Bean
     public ProcessEngineConfigurationImpl processEngineConfiguration() throws ClassNotFoundException {
         SpringProcessEngineConfiguration configuration = new SpringProcessEngineConfiguration();
+        //设置数据源
         configuration.setDataSource(activitiDataSource());
-        configuration.setDatabaseSchemaUpdate("true");
+        //创建表的规则 ProcessEngineConfiguration
+        //false         即不会创建
+        //create-drop   会删除重新创建
+        //true          没有表自动创建
+        //update
+        configuration.setDatabaseSchemaUpdate("update");
         configuration.setTransactionManager(transactionManager());
         configuration.setJobExecutorActivate(false);//activiti5
         configuration.setAsyncExecutorActivate(true); //activiti6

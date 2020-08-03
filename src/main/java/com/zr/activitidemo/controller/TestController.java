@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
+import org.activiti.engine.TaskService;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.runtime.ProcessInstance;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,5 +51,9 @@ public class TestController {
         String businessKey = "1";
         ProcessInstance instance = runtimeService.startProcessInstanceByKey(processDefinitionKey, businessKey);
         log.info("Run----- id:" + instance.getId());
+
+        //查询任务
+        TaskService taskService = processEngine.getTaskService();
+        taskService.createTaskQuery().taskAssignee("user1");
     }
 }

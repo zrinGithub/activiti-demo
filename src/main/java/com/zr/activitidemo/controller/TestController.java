@@ -7,14 +7,16 @@ import org.activiti.engine.ProcessEngine;
 import org.activiti.engine.RepositoryService;
 import org.activiti.engine.RuntimeService;
 import org.activiti.engine.TaskService;
+import org.activiti.engine.impl.identity.Authentication;
 import org.activiti.engine.repository.Deployment;
 import org.activiti.engine.runtime.ProcessInstance;
+import org.activiti.engine.task.Comment;
+import org.activiti.engine.task.Task;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
  * Description:
@@ -38,7 +40,7 @@ public class TestController {
                 //流程名字
                 .name("测试1")
                 //流程资源文件
-                .addClasspathResource("task/TestTask1.bpmn")
+                .addClasspathResource("task/TestProcess.bpmn")
                 //部署
                 .deploy();
         log.info("Deploy----- id:" + deploy.getId());
@@ -54,6 +56,48 @@ public class TestController {
 
         //查询任务
         TaskService taskService = processEngine.getTaskService();
-        taskService.createTaskQuery().taskAssignee("user1");
+        List<Task> tasks = taskService.createTaskQuery().taskAssignee("user1")
+                //可以设置分页
+//                .listPage(1, 10)
+                //排序
+//                .orderByTaskCreateTime().desc()
+                //确定只有一个结果的时候，可以直接取单个返回
+//                .singleResult()
+                .list();
+
+        //处理任务
+        for (Task task : tasks) {
+            //任务id
+            String taskId = task.getId();
+            //流程实例id
+            String instanceId = task.getProcessInstanceId();
+            //批注信息
+            String comment = "同意";
+            Authentication.setAuthenticatedUserId("user1");
+            //添加批注
+            taskService.addComment(taskId, instanceId, comment);
+
+            log.info("Now complete Task id:" + taskId);
+            //处理任务
+            taskService.complete(taskId);
+        }
+
+        //查看批注与businessKey
+        List<Task> user2Tasks = taskService.createTaskQuery().taskAssignee("user2").list();
+        for (Task task : user2Tasks) {
+            List<Comment> comments = taskService.getProcessInstanceComments(task.getProcessInstanceId());
+            log.info("task id: {} ", task.getId());
+            for (Comment comment : comments) {
+                log.info("comment user:{}", comment.getUserId());
+                log.info("comment message:{}", comment.getFullMessage());
+                log.info("comment time:{}", comment.getTime());
+            }
+            //拿到businessKey
+            ProcessInstance instance1 = runtimeService.createProcessInstanceQuery()
+                    .processInstanceId(task.getProcessInstanceId())
+                    .singleResult();
+            log.info("business key:{}", instance1.getBusinessKey());
+        }
     }
+
 }
